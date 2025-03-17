@@ -5,12 +5,12 @@ import connectDB from '../../../../lib/mongodb';
 // Toggle public visibility of a roadmap
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
-    const { id } = params;
+    const { id } = context.params;
     const body = await request.json();
     const { isPublic } = body;
     

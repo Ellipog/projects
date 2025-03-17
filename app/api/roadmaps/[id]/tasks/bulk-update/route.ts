@@ -7,12 +7,12 @@ import mongoose from 'mongoose';
 // Bulk update tasks and column orders
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
-    const { id: roadmapId } = params;
+    const { id: roadmapId } = context.params;
     const { tasks, columns, columnOrder } = await request.json();
     
     // First, check if the roadmap exists

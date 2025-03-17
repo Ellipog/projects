@@ -5,12 +5,12 @@ import connectDB from '../../../lib/mongodb';
 // Get a single roadmap by ID
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
-    const { id } = params;
+    const { id } = context.params;
     
     const roadmap = await RoadmapModel.findById(id);
     
@@ -37,12 +37,12 @@ export async function GET(
 // Update a roadmap
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
-    const { id } = params;
+    const { id } = context.params;
     const body = await request.json();
     
     const roadmap = await RoadmapModel.findByIdAndUpdate(
@@ -74,12 +74,12 @@ export async function PATCH(
 // Delete a roadmap
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
-    const { id } = params;
+    const { id } = context.params;
     
     const roadmap = await RoadmapModel.findByIdAndDelete(id);
     
