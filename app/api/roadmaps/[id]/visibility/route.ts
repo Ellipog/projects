@@ -9,11 +9,11 @@ interface RouteParams {
 }
 
 // Toggle public visibility of a roadmap
-export async function PATCH(request: Request, { params }: RouteParams) {
+export async function PATCH(request: Request, context: RouteParams) {
   try {
     await connectDB();
     
-    const { id } = params;
+    const { id } = await context.params;
     const body = await request.json();
     const { isPublic } = body;
     

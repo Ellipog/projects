@@ -7,7 +7,7 @@ import ClientNavbar from './components/ClientNavbar';
 import { ToastProvider } from "./components/Toast";
 
 export const metadata: Metadata = {
-  title: "Projects App",
+  title: "Projects",
   description: "Create and manage your projects efficiently",
 };
 

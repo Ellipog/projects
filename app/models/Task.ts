@@ -27,6 +27,7 @@ export interface ITask extends Document {
   attributes: IAttribute[];
   user: mongoose.Types.ObjectId;
   roadmap: mongoose.Types.ObjectId;
+  customId?: string;
 }
 
 // Create Comment Schema
@@ -99,17 +100,23 @@ const TaskSchema = new Schema<ITask>(
     color: {
       type: String
     },
+    customId: {
+      type: String,
+      index: true
+    },
     comments: [CommentSchema],
     attributes: [AttributeSchema],
     user: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'User is required']
+      required: [true, 'User is required'],
+      auto: true
     },
     roadmap: {
       type: Schema.Types.ObjectId,
       ref: 'Roadmap',
-      required: [true, 'Roadmap is required']
+      required: [true, 'Roadmap is required'],
+      auto: true
     }
   },
   {

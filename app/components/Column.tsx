@@ -24,10 +24,50 @@ const Column: React.FC<ColumnProps> = ({
     return <div className="p-4 text-red-500">Invalid column configuration</div>;
   }
 
+  // Get column styling based on column ID/status
+  const getColumnStyles = () => {
+    switch (column.id) {
+      case 'column-1': // Todo
+        return {
+          badge: 'bg-yellow-200 text-yellow-800',
+          dragOver: 'bg-yellow-50/70'
+        };
+      case 'column-2': // In Progress
+        return {
+          badge: 'bg-green-200 text-green-800',
+          dragOver: 'bg-green-50/70'
+        };
+      case 'column-3': // Done
+        return {
+          badge: 'bg-blue-200 text-blue-800',
+          dragOver: 'bg-blue-50/70'
+        };
+      default:
+        return {
+          badge: 'bg-gray-200 text-gray-800',
+          dragOver: 'bg-blue-50'
+        };
+    }
+  };
+
+  const styles = getColumnStyles();
+
   return (
-    <div className="flex flex-col h-full bg-gray-50 rounded-md shadow-sm">
-      <div className="px-4 py-3 bg-gray-100 font-semibold text-gray-800 rounded-t-md">
-        {column.title}
+    <motion.div 
+      className="flex flex-col h-full bg-white rounded-lg shadow-md overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className={cn(
+        "px-4 py-3 -mb-3 font-medium flex items-center justify-between"
+      )}>
+        <div className="flex items-center">
+          <span className={cn("font-semibold text-gray-800")}>{column.title}</span>
+          <span className={cn("ml-2 text-xs px-2 py-0.5 rounded-full", styles.badge)}>
+            {tasks.length}
+          </span>
+        </div>
       </div>
       <Droppable 
         droppableId={column.id} 
@@ -39,8 +79,8 @@ const Column: React.FC<ColumnProps> = ({
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={cn(
-              'flex-grow p-3 overflow-y-auto min-h-[100px] rounded-b-md transition-colors duration-200',
-              snapshot.isDraggingOver ? 'bg-blue-50' : ''
+              'flex-grow p-3 overflow-y-auto min-h-[200px] rounded-b-lg transition-all duration-200',
+              snapshot.isDraggingOver ? styles.dragOver : 'bg-gray-50/50'
             )}
             data-column-id={column.id}
           >
@@ -76,7 +116,7 @@ const Column: React.FC<ColumnProps> = ({
           </div>
         )}
       </Droppable>
-    </div>
+    </motion.div>
   );
 };
 

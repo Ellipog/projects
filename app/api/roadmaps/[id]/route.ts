@@ -9,11 +9,11 @@ interface RouteParams {
 }
 
 // Get a single roadmap by ID
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(request: Request, context: RouteParams) {
   try {
     await connectDB();
     
-    const { id } = params;
+    const { id } = await context.params;
     
     const roadmap = await RoadmapModel.findById(id);
     
@@ -38,11 +38,11 @@ export async function GET(request: Request, { params }: RouteParams) {
 }
 
 // Update a roadmap
-export async function PATCH(request: Request, { params }: RouteParams) {
+export async function PATCH(request: Request, context: RouteParams) {
   try {
     await connectDB();
     
-    const { id } = params;
+    const { id } = await context.params;
     const body = await request.json();
     
     const roadmap = await RoadmapModel.findByIdAndUpdate(
@@ -72,11 +72,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 // Delete a roadmap
-export async function DELETE(request: Request, { params }: RouteParams) {
+export async function DELETE(request: Request, context: RouteParams) {
   try {
     await connectDB();
     
-    const { id } = params;
+    const { id } = await context.params;
     
     const roadmap = await RoadmapModel.findByIdAndDelete(id);
     

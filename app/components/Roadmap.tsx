@@ -1,8 +1,6 @@
 import React, { useState, useEffect, memo, useCallback, useRef } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import Column from './Column';
-import TaskForm from './TaskForm';
-import TaskDetail from './TaskDetail';
 import PresetTaskSelector from './PresetTaskSelector';
 import { RoadmapData, Task, Column as ColumnType } from '../types';
 import defaultInitialData from '../mock-data';
@@ -11,6 +9,7 @@ import LoadingSpinner from './LoadingSpinner';
 import Timeline from './Timeline';
 import { cn } from '../utils/cn';
 import { useToast } from './Toast';
+import TaskModal from './TaskModal';
 
 interface RoadmapProps {
   initialData?: any; // The roadmap data from the database
@@ -61,10 +60,8 @@ const Roadmap: React.FC<RoadmapProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
   const [showPresetSelector, setShowPresetSelector] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'timeline'>('kanban');
   const [filterOptions, setFilterOptions] = useState({
     searchTerm: '',
@@ -73,6 +70,11 @@ const Roadmap: React.FC<RoadmapProps> = ({
     status: [] as string[]
   });
   const toast = useToast();
+  
+  // Instead of separate state variables for showForm, selectedTask, and editingTask, 
+  // use a single modalTask state and a showModal boolean
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [modalTask, setModalTask] = useState<Task | undefined>(undefined);
   
   // Initialize data state with proper column structure
   const [data, setData] = useState<RoadmapData>(() => {
@@ -259,30 +261,8 @@ const Roadmap: React.FC<RoadmapProps> = ({
         return;
       }
       
-      // Try to load from cache first
       try {
-        const cacheKey = `roadmap_tasks_${initialData._id}`;
-        const cachedData = localStorage.getItem(cacheKey);
-        const cacheTimestamp = localStorage.getItem(`${cacheKey}_timestamp`);
-        const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-        
-        if (cachedData && cacheTimestamp && 
-            (Date.now() - parseInt(cacheTimestamp)) < CACHE_TTL) {
-          console.log("Using cached data");
-          const parsedData = JSON.parse(cachedData);
-          
-          // Parse dates from strings
-          Object.values(parsedData.tasks || {}).forEach((task: any) => {
-            task.startTime = new Date(task.startTime);
-            task.endTime = new Date(task.endTime);
-          });
-          
-          distributeTasksToColumns(parsedData.tasks || {});
-          setIsLoading(false);
-          return;
-        }
-        
-        // Fetch from API if no cache
+        // Fetch from API
         console.log("Fetching tasks from API");
         const response = await fetch(`/api/tasks?roadmapId=${initialData._id}`, {
           signal: controller.signal
@@ -306,8 +286,11 @@ const Roadmap: React.FC<RoadmapProps> = ({
               status = task.status as 'todo' | 'in-progress' | 'done';
             }
             
-            tasksObject[task._id] = {
-              id: task._id,
+            // Always use customId as the primary ID for consistency
+            const taskId = task.customId || task._id;
+            
+            tasksObject[taskId] = {
+              id: taskId,
               title: task.title,
               description: task.description,
               startTime: new Date(task.startTime),
@@ -321,16 +304,6 @@ const Roadmap: React.FC<RoadmapProps> = ({
           
           // Distribute tasks to columns
           distributeTasksToColumns(tasksObject);
-          
-          // Cache the results
-          try {
-            localStorage.setItem(cacheKey, JSON.stringify({
-              tasks: tasksObject
-            }));
-            localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
-          } catch (e) {
-            console.warn("Failed to cache roadmap data", e);
-          }
         }
       } catch (error) {
         if (error instanceof Error && error.name !== 'AbortError' && isMounted) {
@@ -363,41 +336,57 @@ const Roadmap: React.FC<RoadmapProps> = ({
       const newData = JSON.parse(JSON.stringify(data)) as RoadmapData;
       
       // Create payload
-      const payload = {
+      const payload: any = {
         ...taskData,
-        status: 'todo' as const // Default status for new tasks
+        status: 'todo' as const, // Default status for new tasks
       };
       
-      // In a real app, this would be an API call
-      // Simulate an API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Make sure we have a valid roadmap ID
+      if (!initialData?._id) {
+        console.error('No roadmap ID available');
+        toast.error('Failed to save task: No roadmap ID');
+        throw new Error('No roadmap ID available');
+      }
       
-      // Generate a unique ID (in a real app, this would come from the backend)
-      const uniqueId = `task-${Date.now()}`;
+      // Add the roadmap and user IDs to the payload
+      payload.roadmapId = initialData._id;
       
-      // Simulate API response
-      const result = {
-        success: true,
-        data: {
-          _id: uniqueId,
-          ...payload,
-          comments: [],
-          attributes: []
-        }
-      };
+      // Get user ID from initialData or dynamically generate it
+      if (initialData.user) {
+        payload.userId = initialData.user;
+      } else {
+        // Create a timestamp-based ID that matches MongoDB ObjectId pattern
+        const timestamp = Math.floor(new Date().getTime() / 1000).toString(16).padStart(8, '0');
+        const randomPart = [...Array(16)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+        payload.userId = timestamp + randomPart;
+      }
+      
+      // Make a real API call to save the task
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create task');
+      }
+      
+      const result = await response.json();
       
       if (result.success && result.data) {
         const savedTask = result.data;
         
-        // Create task object
+        // Create task object - always use customId for consistency
         const taskObj: Task = {
-          id: savedTask._id,
+          id: savedTask.customId, // Always use customId
           title: savedTask.title,
           description: savedTask.description,
           startTime: new Date(savedTask.startTime),
           endTime: new Date(savedTask.endTime),
           status: savedTask.status,
-          // Ensure the color is preserved from the payload
           color: savedTask.color || payload.color,
           comments: savedTask.comments || [],
           attributes: savedTask.attributes || []
@@ -411,8 +400,9 @@ const Roadmap: React.FC<RoadmapProps> = ({
         newData.columns[columnId].taskIds.push(taskObj.id);
         
         setData(newData);
-        setShowForm(false);
-        setEditingTask(null);
+        // Don't close the modal automatically
+        // setShowModal(false);
+        // setModalTask(undefined);
         
         // Show success toast
         toast.success('Task created successfully');
@@ -467,10 +457,25 @@ const Roadmap: React.FC<RoadmapProps> = ({
     try {
       setIsSaving(true);
       
+      // Create a clean version of the task data for the API
+      const apiTaskData = {
+        title: updatedTask.title,
+        description: updatedTask.description,
+        startTime: updatedTask.startTime,
+        endTime: updatedTask.endTime,
+        status: updatedTask.status,
+        color: updatedTask.color,
+        comments: updatedTask.comments,
+        attributes: updatedTask.attributes,
+        // Don't include the id field - it's in the URL
+        // Use customId if changing the ID reference is needed
+        customId: updatedTask.id
+      };
+      
       const response = await fetch(`/api/tasks/${updatedTask.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedTask)
+        body: JSON.stringify(apiTaskData)
       });
       
       if (!response.ok) {
@@ -504,13 +509,10 @@ const Roadmap: React.FC<RoadmapProps> = ({
     }
   };
   
-  // Other event handlers
-  const handleViewTask = (task: Task) => setSelectedTask(task);
-  
-  const handleEditTask = (task: Task) => {
-    setEditingTask(task);
-    setSelectedTask(null);
-    setShowForm(true);
+  // Replace handleViewTask and other related functions
+  const handleOpenModal = (task?: Task) => {
+    setModalTask(task);
+    setShowModal(true);
   };
   
   const handleSelectPreset = (preset: Omit<Task, 'id' | 'status'>) => {
@@ -556,12 +558,15 @@ const Roadmap: React.FC<RoadmapProps> = ({
         <h1 className="text-2xl font-bold text-gray-800">Project Roadmap</h1>
         {canEdit && (
           <motion.button
-            onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            onClick={() => handleOpenModal()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-md font-medium transition-colors duration-200 shadow-sm flex items-center space-x-2"
+            whileHover={{ scale: 1.03, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)" }}
+            whileTap={{ scale: 0.97 }}
           >
-            Add New Task
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            <span>Add New Task</span>
           </motion.button>
         )}
       </div>
@@ -578,7 +583,7 @@ const Roadmap: React.FC<RoadmapProps> = ({
                 key={column.id}
                 column={column}
                 tasks={tasksForColumn}
-                onViewTask={handleViewTask}
+                onViewTask={handleOpenModal}
                 isDraggable={canEdit}
               />
             );
@@ -589,41 +594,35 @@ const Roadmap: React.FC<RoadmapProps> = ({
       {/* Timeline View */}
       <Timeline 
         tasks={Object.values(data.tasks)} 
-        onTaskClick={handleViewTask} 
+        onTaskClick={handleOpenModal} 
       />
       
-      {/* Add form modal */}
-      {showForm && (
-        <TaskForm
-          onCancel={() => setShowForm(false)}
-          onSubmit={handleAddTask}
-          initialTask={editingTask || undefined}
-        />
-      )}
-      
       {/* Task details modal */}
-      {selectedTask && (
-        <TaskDetail
-          task={selectedTask}
-          onClose={() => setSelectedTask(null)}
-          onSave={handleUpdateTask}
-          onDelete={handleDeleteTask}
-          isLoading={isSaving}
-          readOnly={!canEdit}
-        />
-      )}
-      
-      {/* Edit form modal */}
-      {editingTask && (
-        <TaskForm
-          onCancel={() => setEditingTask(null)}
-          onSubmit={(taskData) => {
-            handleUpdateTask({ ...editingTask, ...taskData });
-            setEditingTask(null);
-          }}
-          initialTask={editingTask}
-        />
-      )}
+      <AnimatePresence>
+        {showModal && (
+          <TaskModal
+            task={modalTask}
+            onClose={() => {
+              setShowModal(false);
+              setModalTask(undefined);
+            }}
+            onSubmit={(taskData) => {
+              if (modalTask?.id) {
+                // Updating existing task
+                handleUpdateTask(taskData as Task);
+              } else {
+                // Adding new task
+                handleAddTask(taskData);
+                // Update the modal task with the created task
+                setModalTask(taskData as Task);
+              }
+              // Don't close the modal - let user close it manually
+            }}
+            onDelete={modalTask?.id ? handleDeleteTask : undefined}
+            isLoading={isSaving}
+          />
+        )}
+      </AnimatePresence>
       
       {/* Preset selector modal */}
       {showPresetSelector && (

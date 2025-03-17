@@ -101,6 +101,32 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
     }
   }, [task.color, task.status]);
 
+  // Get appropriate icon based on task status
+  const getStatusIcon = useCallback(() => {
+    switch (task.status) {
+      case 'todo':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
+      case 'in-progress':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        );
+      case 'done':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  }, [task.status]);
+
   return (
     <Draggable 
       draggableId={task.id} 
@@ -117,11 +143,11 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
           {...provided.dragHandleProps}
           data-task-id={task.id}
           className={cn(
-            'relative p-4 mb-3 rounded-md shadow-sm border-l-4',
+            'relative p-4 mb-3 rounded-lg border-l-4 bg-white',
             getCardColor(),
-            snapshot.isDragging ? 'shadow-md ring-2 ring-blue-300' : '',
-            isHovered ? 'ring-1 ring-offset-1 ring-blue-400' : '',
-            'transition-all duration-150 ease-in-out'
+            snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-300' : 'shadow-sm',
+            isHovered ? 'shadow-md ring-1 ring-offset-1 ring-blue-400' : '',
+            'transition-all duration-200 ease-out cursor-pointer'
           )}
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
@@ -134,25 +160,70 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
             zIndex: snapshot.isDragging ? 10 : 'auto'
           }}
         >
-          <div className="mb-1">
-            <h3 className="font-semibold text-gray-900">{task.title}</h3>
+          {/* Task header with title and status icon */}
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="font-semibold text-gray-900 text-sm mr-2">{task.title}</h3>
+            <div className="flex-shrink-0 mt-0.5">
+              {getStatusIcon()}
+            </div>
           </div>
           
+          {/* Task description - truncated with ellipsis */}
           {task.description && (
-            <div className="text-sm text-gray-600 mb-3">
+            <div className="text-xs text-gray-600 mb-3 line-clamp-2">
               {task.description}
             </div>
           )}
           
-          <div className="border-t border-gray-100 pt-2 text-xs text-gray-500">
-            <div className="flex justify-between">
-              <span>Start: {formatTime(task.startTime)} {formatDate(task.startTime)}</span>
-              <span>End: {formatTime(task.endTime)}</span>
+          {/* Time information with improved layout */}
+          <div className="pt-2 text-xs text-gray-500 border-t border-gray-100">
+            <div className="grid grid-cols-2 gap-1">
+              <div className="flex items-center">
+                <svg className="h-3 w-3 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>{formatDate(task.startTime)}</span>
+              </div>
+              <div className="flex items-center justify-end">
+                <svg className="h-3 w-3 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{formatTime(task.startTime)}</span>
+              </div>
             </div>
-            <div className="mt-1">
-              <span>Date: {formatDate(task.startTime)}</span>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="flex items-center">
+                <svg className="h-3 w-3 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                {task.attributes.length > 0 ? `${task.attributes.length} attribute${task.attributes.length > 1 ? 's' : ''}` : 'No attributes'}
+              </span>
+              <span className="flex items-center">
+                {task.comments && task.comments.length > 0 && (
+                  <>
+                    <svg className="h-3 w-3 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                    {task.comments.length}
+                  </>
+                )}
+              </span>
             </div>
           </div>
+          
+          {/* Priority indicator - optional addition */}
+          {task.attributes?.some(attr => attr.name.toLowerCase() === 'priority' && ['high', 'medium', 'low'].includes(attr.value.toLowerCase())) && (
+            <div 
+              className={cn(
+                "absolute top-0 right-0 h-5 w-5 rounded-bl-md",
+                task.attributes.find(attr => attr.name.toLowerCase() === 'priority')?.value.toLowerCase() === 'high' 
+                  ? "bg-red-500" 
+                  : task.attributes.find(attr => attr.name.toLowerCase() === 'priority')?.value.toLowerCase() === 'medium'
+                    ? "bg-yellow-500"
+                    : "bg-green-500"
+              )}
+            />
+          )}
         </div>
       )}
     </Draggable>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import TaskModel from '../../models/Task';
 import connectDB from '../../lib/mongodb';
+import mongoose from 'mongoose';
 
 // Get all tasks
 export async function GET(request: Request) {
@@ -23,9 +24,16 @@ export async function GET(request: Request) {
     
     const tasks = await TaskModel.find(query);
     
+    // Transform tasks to always use customId as the primary ID
+    const responseTasks = tasks.map(task => {
+      const taskObj = task.toJSON();
+      taskObj.id = taskObj.customId;
+      return taskObj;
+    });
+    
     return NextResponse.json({ 
       success: true, 
-      data: tasks 
+      data: responseTasks 
     });
   } catch (error) {
     console.error('Error fetching tasks:', error);
@@ -52,7 +60,6 @@ export async function POST(request: Request) {
     }
     
     // For user ID, either get it from the request body or from the current session
-    // Depending on your auth setup, you might want to validate that the user is authenticated
     const userId = body.userId;
     
     if (!userId) {
@@ -60,6 +67,26 @@ export async function POST(request: Request) {
         { success: false, message: "User ID is required" },
         { status: 400 }
       );
+    }
+    
+    // Use the provided ID if it exists, otherwise create a timestamp-based ID
+    const customId = body.id || `task-${Date.now()}`;
+    
+    // Convert string IDs to ObjectIDs if needed
+    let userObjectId = userId;
+    let roadmapObjectId = body.roadmapId;
+    
+    try {
+      // Try to create ObjectIDs if they're not already
+      if (typeof userId === 'string' && !mongoose.Types.ObjectId.isValid(userId)) {
+        userObjectId = new mongoose.Types.ObjectId();
+      }
+      
+      if (typeof body.roadmapId === 'string' && !mongoose.Types.ObjectId.isValid(body.roadmapId)) {
+        roadmapObjectId = new mongoose.Types.ObjectId();
+      }
+    } catch (error) {
+      console.error('Error converting IDs to ObjectIds:', error);
     }
     
     // Create task with properly mapped fields
@@ -72,12 +99,17 @@ export async function POST(request: Request) {
       color: body.color,
       comments: body.comments || [],
       attributes: body.attributes || [],
-      roadmap: body.roadmapId, // Map roadmapId to roadmap
-      user: userId // Map userId to user
+      roadmap: roadmapObjectId, // Use converted ObjectId
+      user: userObjectId, // Use converted ObjectId
+      customId // Set the custom ID
     });
     
+    // Transform the response to always use customId as the primary ID
+    const responseTask = task.toJSON();
+    responseTask.id = responseTask.customId;
+    
     return NextResponse.json(
-      { success: true, data: task },
+      { success: true, data: responseTask },
       { status: 201 }
     );
   } catch (error) {
