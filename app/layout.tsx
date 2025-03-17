@@ -35,7 +35,7 @@ export default function RootLayout({
               <div className="h-16">
                 <ClientNavbar />
               </div>
-              <main className="flex-grow container mx-auto px-4 pt-6 overflow-scroll">
+              <main className="flex-grow container mx-auto px-4 pt-6 overflow-auto">
                 {children}
               </main>
             </div>

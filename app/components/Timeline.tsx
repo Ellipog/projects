@@ -614,29 +614,34 @@ const Timeline: React.FC<TimelineProps> = ({ tasks, onTaskClick }) => {
           
           {/* Tasks - with proper vertical positioning */}
           <div 
-            className="relative mt-14"
+            className="relative mt-14 pointer-events-none"
             style={{ height: `${timelineContentHeight}px` }}
           >
             {taskPlacements.map(placement => (
               <motion.div
                 key={placement.task.id}
                 className={cn(
-                  "absolute py-1.5 px-3 rounded-md border shadow-sm cursor-pointer overflow-hidden flex flex-col justify-between transition-all",
+                  "absolute py-1.5 px-3 rounded-md border shadow-sm cursor-pointer overflow-hidden flex flex-col justify-between transition-all pointer-events-auto",
                   getTaskColor(placement.task)
                 )}
                 style={{
                   ...getTaskPosition(placement),
                   height: '42px',
-                  minWidth: '120px'
+                  minWidth: '0',
+                  maxWidth: `${((placement.task.endTime.getTime() - placement.task.startTime.getTime()) / (timelineEndDate.getTime() - timelineStartDate.getTime())) * 100}%`,
+                  willChange: 'transform, box-shadow, z-index, height, top'
                 }}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ 
                   y: -3, 
-                  zIndex: 20,
-                  boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
+                  zIndex: 50,
+                  boxShadow: '0 8px 16px rgba(0,0,0,0.12)',
                   height: '46px',
-                  top: `${(placement.row * 48) - 1}px` // Adjust top position to compensate for increased height
+                  top: `${(placement.row * 48) - 1}px`, // Adjust top position to compensate for increased height
+                  maxWidth: `${((placement.task.endTime.getTime() - placement.task.startTime.getTime()) / (timelineEndDate.getTime() - timelineStartDate.getTime())) * 100}%`,
+                  scale: 1.01,
+                  transition: { duration: 0.15, ease: "easeOut" }
                 }}
                 onClick={() => onTaskClick(placement.task)}
               >
