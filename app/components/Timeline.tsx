@@ -106,57 +106,55 @@ const Timeline: React.FC<TimelineProps> = ({ tasks, onTaskClick }) => {
   
   // Calculate task placements to avoid overlaps
   const calculateTaskPlacements = (tasks: Task[], startDate: Date, endDate: Date) => {
-    // Convert tasks to placement objects with time values
-    const placements: TaskPlacement[] = tasks.map(task => ({
-      task,
-      row: 0, // Will be set during processing
-      startTime: new Date(task.startTime).getTime(),
-      endTime: new Date(task.endTime).getTime()
-    }));
+    if (!tasks || tasks.length === 0) return;
     
-    // Sort by start time
+    // Convert tasks to placement objects with valid time values
+    const placements: TaskPlacement[] = tasks.map(task => {
+      // Ensure we have valid Date objects
+      const start = new Date(task.startTime);
+      const end = new Date(task.endTime);
+      
+      return {
+        task,
+        row: 0,
+        startTime: start.getTime(),
+        endTime: end.getTime()
+      };
+    });
+    
+    // Sort strictly by start time
     placements.sort((a, b) => a.startTime - b.startTime);
     
-    // Track the end time of the last task in each row
-    const rowEndTimes: number[] = [];
-    let highestRow = 0;
+    // Simple greedy algorithm for row assignment
+    // For each row, keep track of the last assigned task's end time
+    const rowLastEndTime: number[] = [];
     
-    // Use different overlap threshold based on time unit
-    // In days view, tasks on the same day should be separate rows
-    const useStricterOverlapRules = timeUnit === 'days';
-    
-    // Assign rows to each task
+    // Assign each task to the first available row
     placements.forEach(placement => {
-      // Find the first row where this task can fit
       let assignedRow = 0;
+      
+      // Find the first row where this task doesn't overlap
       while (true) {
-        // For days view, use a stricter comparison to ensure tasks on the same day
-        // are placed on different rows to avoid any visual overlapping
-        if (rowEndTimes[assignedRow] === undefined || 
-            (useStricterOverlapRules ? 
-              // In days view: consider same-day tasks as overlapping
-              new Date(rowEndTimes[assignedRow]).toDateString() !== new Date(placement.startTime).toDateString() && 
-              rowEndTimes[assignedRow] <= placement.startTime :
-              // In hours view: use normal overlap detection
-              rowEndTimes[assignedRow] <= placement.startTime
-            )) {
-          // This row is free or the last task in this row ended before this one starts
+        // If we haven't used this row yet or if the row's last task ends before this one starts
+        if (rowLastEndTime[assignedRow] === undefined || 
+            // Add a 1ms buffer to ensure no exact overlapping boundaries
+            rowLastEndTime[assignedRow] + 1 <= placement.startTime) {
           break;
         }
+        
+        // Try the next row
         assignedRow++;
       }
       
-      // Update the placement with the assigned row
+      // Assign this task to the found row
       placement.row = assignedRow;
       
-      // Update the end time for this row
-      rowEndTimes[assignedRow] = placement.endTime;
-      
-      // Track the highest row used
-      if (assignedRow > highestRow) {
-        highestRow = assignedRow;
-      }
+      // Update the row's last end time
+      rowLastEndTime[assignedRow] = placement.endTime;
     });
+    
+    // Find the highest row used
+    const highestRow = rowLastEndTime.length > 0 ? rowLastEndTime.length - 1 : 0;
     
     setTaskPlacements(placements);
     setMaxRow(highestRow);
