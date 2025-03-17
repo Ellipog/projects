@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import React from 'react';
 import ClientNavbar from './components/ClientNavbar';
+import { ToastProvider } from "./components/Toast";
 
 export const metadata: Metadata = {
   title: "Projects App",
@@ -29,12 +30,16 @@ export default function RootLayout({
     <html lang="en" className="h-full">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}>
         <AuthProvider>
-          <div className="h-full flex flex-col bg-gray-50">
-            <ClientNavbar />
-            <main className="flex-grow container mx-auto px-4 py-6">
-              {children}
-            </main>
-          </div>
+          <ToastProvider>
+            <div className="h-full flex flex-col bg-gray-50">
+              <div className="h-16">
+                <ClientNavbar />
+              </div>
+              <main className="flex-grow container mx-auto px-4 py-6 overflow-hidden">
+                {children}
+              </main>
+            </div>
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

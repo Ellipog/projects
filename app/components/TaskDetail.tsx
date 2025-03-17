@@ -178,7 +178,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg w-full max-h-[90vh] overflow-y-auto">
+    <div className="bg-white rounded-lg shadow-lg w-full max-h-[calc(90vh-var(--navbar-height))] overflow-y-auto">
       {/* Header */}
       <div className={cn(
         'px-6 py-4 flex justify-between items-center border-b',

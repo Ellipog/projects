@@ -25,7 +25,10 @@ const Column: React.FC<ColumnProps> = ({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-gray-50 rounded-md shadow-sm">
+      <div className="px-4 py-3 bg-gray-100 font-semibold text-gray-800 rounded-t-md">
+        {column.title}
+      </div>
       <Droppable 
         droppableId={column.id} 
         isDropDisabled={!isDraggable}
@@ -36,7 +39,7 @@ const Column: React.FC<ColumnProps> = ({
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={cn(
-              'flex-grow p-3 overflow-y-auto min-h-[400px] rounded-b-lg transition-colors duration-200',
+              'flex-grow p-3 overflow-y-auto min-h-[100px] rounded-b-md transition-colors duration-200',
               snapshot.isDraggingOver ? 'bg-blue-50' : ''
             )}
             data-column-id={column.id}
@@ -56,15 +59,17 @@ const Column: React.FC<ColumnProps> = ({
                 animate={{ opacity: 1 }}
                 transition={{ staggerChildren: 0.05 }}
               >
-                {tasks.map((task, index) => (
-                  <TaskCard 
-                    key={task.id} 
-                    task={task} 
-                    index={index} 
-                    onEditClick={onViewTask}
-                    isDraggable={isDraggable}
-                  />
-                ))}
+                {tasks.map((task, index) => 
+                  task ? ( // Only render if task is defined
+                    <TaskCard 
+                      key={task.id} 
+                      task={task} 
+                      index={index} 
+                      onEditClick={onViewTask}
+                      isDraggable={isDraggable}
+                    />
+                  ) : null
+                )}
               </motion.div>
             )}
             {provided.placeholder}

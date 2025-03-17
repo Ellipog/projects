@@ -9,9 +9,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default function RoadmapPage({ params }: PageProps) {
@@ -21,7 +21,8 @@ export default function RoadmapPage({ params }: PageProps) {
   const [roadmapLoading, setRoadmapLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [permissionLevel, setPermissionLevel] = useState<string | null>(null);
-  const [slug] = useState<string>(params.slug);
+  const resolvedParams = React.use(params);
+  const [slug] = useState<string>(resolvedParams.slug);
   
   // Fetch roadmap data
   useEffect(() => {
@@ -249,6 +250,7 @@ export default function RoadmapPage({ params }: PageProps) {
             {permissionLevel === 'admin' && (
               <AnimatePresence>
                 <motion.button
+                  key="toggle-public-btn"
                   onClick={togglePublic}
                   className={`px-4 py-2 rounded-md text-sm font-medium ${
                     roadmap.isPublic 
@@ -264,6 +266,7 @@ export default function RoadmapPage({ params }: PageProps) {
                 </motion.button>
                 
                 <motion.button
+                  key="share-btn"
                   onClick={handleShare}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                   variants={buttonVariants}

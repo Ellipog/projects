@@ -4,7 +4,6 @@ import { Task } from '../types';
 import { formatDateTime, formatTime, formatDate } from '../utils/dateUtils';
 import { cn } from '../utils/cn';
 import { motion } from 'framer-motion';
-import TaskStatusBadge from './TaskStatusBadge';
 
 interface TaskCardProps {
   task: Task;
@@ -25,27 +24,12 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-  const [hasScrollbar, setHasScrollbar] = useState(false);
 
   // Safety check to ensure task has a valid ID
   if (!task || !task.id) {
     console.error('TaskCard received invalid task:', task);
     return <div className="p-4 mb-3 border-l-4 border-red-500 rounded-lg bg-white shadow">Invalid task data</div>;
   }
-
-  // Handle task status styles - memoized to avoid recreating on every render
-  const getStatusBadge = useCallback(() => {
-    switch (task.status) {
-      case 'todo':
-        return <TaskStatusBadge status="todo" />;
-      case 'in-progress':
-        return <TaskStatusBadge status="in-progress" />;
-      case 'done':
-        return <TaskStatusBadge status="done" />;
-      default:
-        return <TaskStatusBadge status="todo" />;
-    }
-  }, [task.status]);
 
   // Memoized event handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -98,38 +82,24 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
     }, 100);
   }, []);
   
-  // Extract border color from the task's color string
-  const cardBorderColor = useCallback(() => {
-    if (!task.color) return 'border-gray-300';
-    
-    // Extract the border color from format like "bg-blue-100 border-blue-500"
-    const borderColorMatch = task.color.match(/border-([a-z]+-\d+)/);
-    return borderColorMatch ? borderColorMatch[0] : 'border-gray-300';
-  }, [task.color]);
-
-  // Extract background color from the task's color string
-  const cardBackgroundColor = useCallback(() => {
-    if (!task.color) return 'bg-white';
-    
-    // Extract the background color from format like "bg-blue-100 border-blue-500"
-    const bgColorMatch = task.color.match(/bg-([a-z]+-\d+)/);
-    return bgColorMatch ? bgColorMatch[0] : 'bg-white';
-  }, [task.color]);
-
-  // Check if description is overflowing and needs scrollbar
-  useEffect(() => {
-    if (cardRef.current) {
-      const descriptionElem = cardRef.current.querySelector('.task-description');
-      if (descriptionElem && descriptionElem.scrollHeight > descriptionElem.clientHeight) {
-        setHasScrollbar(true);
-      } else {
-        setHasScrollbar(false);
-      }
+  // Get the color based on task color property or fallback to status if no color is available
+  const getCardColor = useCallback(() => {
+    if (task.color) {
+      return task.color;
     }
-  }, [task.description]);
-  
-  // Format date range for display
-  const dateRangeText = `${formatDate(task.startTime)} - ${formatDate(task.endTime)}`;
+    
+    // Fallback to status-based colors if no color property exists
+    switch (task.status) {
+      case 'todo':
+        return 'border-yellow-400 bg-yellow-50';
+      case 'in-progress':
+        return 'border-green-400 bg-green-50';
+      case 'done':
+        return 'border-blue-400 bg-blue-50';
+      default:
+        return 'border-gray-300 bg-white';
+    }
+  }, [task.color, task.status]);
 
   return (
     <Draggable 
@@ -140,19 +110,17 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
       {(provided, snapshot) => (
         <div
           ref={(node) => {
-            // Set both refs - the Draggable ref and our own ref
             provided.innerRef(node);
             if (cardRef) cardRef.current = node;
           }}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          data-task-id={task.id} // Add data attribute for debugging
+          data-task-id={task.id}
           className={cn(
-            'relative p-3 mb-2 rounded-md shadow-sm border-l-4',
-            cardBorderColor(),
-            cardBackgroundColor(),
-            snapshot.isDragging ? 'shadow-md' : '',
-            isHovered ? 'ring-2 ring-offset-1 ring-blue-400' : '',
+            'relative p-4 mb-3 rounded-md shadow-sm border-l-4',
+            getCardColor(),
+            snapshot.isDragging ? 'shadow-md ring-2 ring-blue-300' : '',
+            isHovered ? 'ring-1 ring-offset-1 ring-blue-400' : '',
             'transition-all duration-150 ease-in-out'
           )}
           onMouseDown={handleMouseDown}
@@ -166,43 +134,25 @@ const TaskCard: React.FC<TaskCardProps> = memo(({
             zIndex: snapshot.isDragging ? 10 : 'auto'
           }}
         >
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="font-medium text-gray-900 pr-6">{task.title}</h3>
-            {getStatusBadge()}
+          <div className="mb-1">
+            <h3 className="font-semibold text-gray-900">{task.title}</h3>
           </div>
           
           {task.description && (
-            <div 
-              className={`task-description text-sm text-gray-600 mb-2 overflow-y-auto max-h-20 
-                ${hasScrollbar ? 'pr-2 custom-scrollbar' : ''}`
-              }
-            >
+            <div className="text-sm text-gray-600 mb-3">
               {task.description}
             </div>
           )}
           
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>
-              {dateRangeText}
-            </span>
-            {task.attributes.length > 0 && (
-              <span className="flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                </svg>
-                {task.attributes.length}
-              </span>
-            )}
+          <div className="border-t border-gray-100 pt-2 text-xs text-gray-500">
+            <div className="flex justify-between">
+              <span>Start: {formatTime(task.startTime)} {formatDate(task.startTime)}</span>
+              <span>End: {formatTime(task.endTime)}</span>
+            </div>
+            <div className="mt-1">
+              <span>Date: {formatDate(task.startTime)}</span>
+            </div>
           </div>
-          
-          {snapshot.isDragging && (
-            <motion.div 
-              className="absolute inset-0 bg-blue-500 rounded-md opacity-20"
-              layoutId={`drag-overlay-${task.id}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.2 }}
-            />
-          )}
         </div>
       )}
     </Draggable>
