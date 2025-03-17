@@ -2,18 +2,15 @@ import { NextResponse } from 'next/server';
 import RoadmapModel from '../../../models/Roadmap';
 import connectDB from '../../../lib/mongodb';
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
 // Get a single roadmap by ID
-export async function GET(request: Request, context: RouteParams) {
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectDB();
     
-    const { id } = await context.params;
+    const { id } = params;
     
     const roadmap = await RoadmapModel.findById(id);
     
@@ -38,11 +35,14 @@ export async function GET(request: Request, context: RouteParams) {
 }
 
 // Update a roadmap
-export async function PATCH(request: Request, context: RouteParams) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectDB();
     
-    const { id } = await context.params;
+    const { id } = params;
     const body = await request.json();
     
     const roadmap = await RoadmapModel.findByIdAndUpdate(
@@ -72,11 +72,14 @@ export async function PATCH(request: Request, context: RouteParams) {
 }
 
 // Delete a roadmap
-export async function DELETE(request: Request, context: RouteParams) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectDB();
     
-    const { id } = await context.params;
+    const { id } = params;
     
     const roadmap = await RoadmapModel.findByIdAndDelete(id);
     
