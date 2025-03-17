@@ -201,7 +201,7 @@ export default function Home() {
         </motion.div>
       </main>
       
-      <footer className="bg-white border-t border-gray-200 py-4">
+      <footer className="bg-white border-t border-gray-200 py-4 mb-20">
         <div className="container mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0 }}
