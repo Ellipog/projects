@@ -6,9 +6,9 @@ import mongoose from 'mongoose';
 // GET - Fetch a task by ID
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = await context.params;
+  const id = params.id;
   
   if (!id) {
     return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
@@ -60,9 +60,9 @@ export async function GET(
 // PUT - Update a task
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = await context.params;
+  const id = params.id;
   
   if (!id) {
     return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
@@ -126,9 +126,9 @@ export async function PUT(
 // DELETE - Remove a task
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = await context.params;
+  const id = params.id;
   
   if (!id) {
     return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });

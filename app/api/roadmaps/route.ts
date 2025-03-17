@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import RoadmapModel from '../../models/Roadmap';
 import connectDB from '../../lib/mongodb';
 
 // Get all roadmaps
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     await connectDB();
     
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 }
 
 // Create a new roadmap
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     await connectDB();
     

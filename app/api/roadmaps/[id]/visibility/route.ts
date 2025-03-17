@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import RoadmapModel from '../../../../models/Roadmap';
 import connectDB from '../../../../lib/mongodb';
+import { NextRequest } from 'next/server';
 
 // Toggle public visibility of a roadmap
 export async function PATCH(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
-    const { id } = context.params;
+    const id = params.id;
     const body = await request.json();
     const { isPublic } = body;
     

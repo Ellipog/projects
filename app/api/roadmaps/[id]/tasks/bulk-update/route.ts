@@ -3,16 +3,17 @@ import TaskModel from '../../../../../models/Task';
 import RoadmapModel from '../../../../../models/Roadmap';
 import connectDB from '../../../../../lib/mongodb';
 import mongoose from 'mongoose';
+import { NextRequest } from 'next/server';
 
 // Bulk update tasks and column orders
 export async function PUT(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
-    const { id: roadmapId } = context.params;
+    const roadmapId = params.id;
     const { tasks, columns, columnOrder } = await request.json();
     
     // First, check if the roadmap exists

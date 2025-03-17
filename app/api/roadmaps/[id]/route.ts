@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import RoadmapModel from '../../../models/Roadmap';
 import connectDB from '../../../lib/mongodb';
+import { NextRequest } from 'next/server';
 
 // Get a single roadmap by ID
 export async function GET(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
-    const { id } = context.params;
+    const id = params.id;
     
     const roadmap = await RoadmapModel.findById(id);
     
@@ -36,13 +37,13 @@ export async function GET(
 
 // Update a roadmap
 export async function PATCH(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
-    const { id } = context.params;
+    const id = params.id;
     const body = await request.json();
     
     const roadmap = await RoadmapModel.findByIdAndUpdate(
@@ -73,13 +74,13 @@ export async function PATCH(
 
 // Delete a roadmap
 export async function DELETE(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
-    const { id } = context.params;
+    const id = params.id;
     
     const roadmap = await RoadmapModel.findByIdAndDelete(id);
     

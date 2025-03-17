@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import RoadmapModel from '../../../models/Roadmap';
 import connectDB from '../../../lib/mongodb';
 
 // Share a roadmap with others
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     await connectDB();
     
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 }
 
 // Remove sharing for a roadmap
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
   try {
     await connectDB();
     

@@ -1,17 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import RoadmapModel from '../../../../models/Roadmap';
 import connectDB from '../../../../lib/mongodb';
 
 // Get roadmap by slug (for sharing via URL)
 export async function GET(
-  request: Request,
-  context: { params: Promise<{ slug: string }> }
+  request: NextRequest,
+  { params }: { params: { slug: string } }
 ) {
   try {
     await connectDB();
     
-    // Wait for params to be available
-    const params = await context.params;
     const { slug } = params;
     
     // Find roadmap by slug
