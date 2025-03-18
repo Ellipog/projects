@@ -628,7 +628,7 @@ const Timeline: React.FC<TimelineProps> = ({ tasks, onTaskClick }) => {
                   ...getTaskPosition(placement),
                   height: '42px',
                   minWidth: '0',
-                  maxWidth: `${((placement.task.endTime.getTime() - placement.task.startTime.getTime()) / (timelineEndDate.getTime() - timelineStartDate.getTime())) * 100}%`,
+                  maxWidth: `${((placement.endTime - placement.startTime) / (timelineEndDate.getTime() - timelineStartDate.getTime())) * 100}%`,
                   willChange: 'transform, box-shadow, z-index, height, top'
                 }}
                 initial={{ opacity: 0, y: 5 }}
@@ -639,7 +639,7 @@ const Timeline: React.FC<TimelineProps> = ({ tasks, onTaskClick }) => {
                   boxShadow: '0 8px 16px rgba(0,0,0,0.12)',
                   height: '46px',
                   top: `${(placement.row * 48) - 1}px`, // Adjust top position to compensate for increased height
-                  maxWidth: `${((placement.task.endTime.getTime() - placement.task.startTime.getTime()) / (timelineEndDate.getTime() - timelineStartDate.getTime())) * 100}%`,
+                  maxWidth: `${((placement.endTime - placement.startTime) / (timelineEndDate.getTime() - timelineStartDate.getTime())) * 100}%`,
                   scale: 1.01,
                   transition: { duration: 0.15, ease: "easeOut" }
                 }}
